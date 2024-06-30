@@ -1,0 +1,37 @@
+services:
+  traefik:
+    image: traefik:v2.9
+    command:
+      - traefik
+      - --entrypoints.dev.address=:2020
+      - --providers.file.filename=/config.yml
+      - --api.insecure=true
+    ports:
+      - 2020:2020
+      - 2021:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./lb.yml:/config.yml:ro
+    networks:
+      - traefik-network
+
+  auth:
+    image: auth-service
+    ports:
+      - 2222:8000
+    networks:
+      - traefik-network
+    env_file:
+      - .env
+    build:
+      context: .
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
+    platform: linux/amd64 # Patch for M1 Mac
+    volumes:
+      - ./:/app
+
+
+networks:
+  traefik-network:
+    name: traefik-network
