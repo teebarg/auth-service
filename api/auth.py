@@ -49,7 +49,6 @@ def login(
     response: Response,
     db: deps.SessionDep,
     credentials: SignIn,
-    background_tasks: BackgroundTasks,
 ) -> UserPublic:
     """
     OAuth2 compatible token login, get an access token for future requests
@@ -75,16 +74,6 @@ def login(
             httponly=True,
         )
 
-        email_data = generate_new_account_email(
-            email_to=user.email, username=user.email, password=credentials.password
-        )
-        background_tasks.add_task(
-            send_email,
-            email_to="neyostica2000@yahoo.com",
-            subject=email_data.subject,
-            html_content=email_data.html_content,
-        )
-
         return user
     except Exception as e:
         logger.error(e)
@@ -94,7 +83,7 @@ def login(
 
 
 @router.post("/signup", response_model=UserPublic)
-def register_user(db: deps.SessionDep, user_in: UserRegister) -> Any:
+def register_user(db: deps.SessionDep, user_in: UserRegister, background_tasks: BackgroundTasks) -> Any:
     """
     Create new user without the need to be logged in.
     """
@@ -116,6 +105,7 @@ def register_user(db: deps.SessionDep, user_in: UserRegister) -> Any:
             user.id,
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         )
+
         response = JSONResponse(content=jsonable_encoder(user))
         response.set_cookie(
             key="access_token",
@@ -123,6 +113,16 @@ def register_user(db: deps.SessionDep, user_in: UserRegister) -> Any:
             max_age=timedelta(days=30),
             secure=True,
             httponly=True,
+        )
+
+        email_data = generate_new_account_email(
+            email_to=user.email, username=user.email, password=user_in.password
+        )
+        background_tasks.add_task(
+            send_email,
+            email_to="neyostica2000@yahoo.com",
+            subject=email_data.subject,
+            html_content=email_data.html_content,
         )
         return response
     except Exception as e:

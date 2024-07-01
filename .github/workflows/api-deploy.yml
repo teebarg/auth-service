@@ -1,4 +1,4 @@
-name: Auth Service Deployment
+name: 0Auth Deployment
 
 on:
   workflow_dispatch:
