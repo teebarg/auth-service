@@ -83,7 +83,7 @@ def login(
 
 
 @router.post("/signup", response_model=UserPublic)
-def register_user(db: deps.SessionDep, user_in: UserRegister, background_tasks: BackgroundTasks) -> Any:
+async def register_user(db: deps.SessionDep, user_in: UserRegister, background_tasks: BackgroundTasks) -> Any:
     """
     Create new user without the need to be logged in.
     """
@@ -124,12 +124,28 @@ def register_user(db: deps.SessionDep, user_in: UserRegister, background_tasks: 
             subject=email_data.subject,
             html_content=email_data.html_content,
         )
+        await publish_event({
+            "event": "new_user",
+            "content": {"message": "This is a test message"}
+        })
         return response
     except Exception as e:
         logger.error(e)
         raise HTTPException(
             status_code=500, detail=f"An error occurred while signing up. Error: ${e}"
         ) from e
+
+import aio_pika
+import json
+
+async def publish_event(event: dict):
+    connection = await aio_pika.connect_robust("amqp://rabbitmq")
+    channel = await connection.channel()
+    await channel.default_exchange.publish(
+        aio_pika.Message(body=json.dumps(event).encode()),
+        routing_key="new_user"
+    )
+    await connection.close()
 
 
 @router.get("/refresh-token", response_model=Token)
