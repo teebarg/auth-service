@@ -8,10 +8,7 @@ RED=$(shell tput -Txterm setaf 1)
 BLUE=$(shell tput -Txterm setaf 6)
 RESET=$(shell tput -Txterm sgr0)
 
-# Targets
-build:
-	docker build -t $(PROJECT_SLUG) .
-
+# Terminal
 dev:
 	uvicorn main:app --host 0.0.0.0 --port $(PORT)  --reload
 
