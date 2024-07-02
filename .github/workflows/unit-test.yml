@@ -1,4 +1,4 @@
-name: Backend Unit Test
+name: 0Auth Unit Test
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -29,4 +29,4 @@ jobs:
           pip install -r requirements.txt
 
     - name: Run Tests
-      run: cd backend && make test
+      run: make test

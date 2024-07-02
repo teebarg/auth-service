@@ -30,7 +30,7 @@ updateTest:  ## Update test environment containers (eg: after config changes)
 	docker compose -p $(PROJECT_SLUG) up --build -d
 
 stopTest: ## Stop test development environment
-	@echo "$(RED)Starting docker environment...$(RESET)"
+	@echo "$(RED)Removing docker environment...$(RESET)"
 	@COMPOSE_PROJECT_NAME=$(PROJECT_SLUG) docker compose down
 
 
@@ -44,7 +44,7 @@ prep-docker: ## Prepare postges database
 
 
 pre-commit:
-	npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "frontend:lint,frontend:test,frontend:build,backend:lint,backend:test" \
+	npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "backend:lint,backend:test" \
 	--prefix-colors "bgRed.bold.white,bgGreen.bold.white,bgBlue.bold.white,bgMagenta.bold.white" \
 	"docker exec auth-service-auth-1 make format" \
 	"docker exec auth-service-auth-1 make test"
