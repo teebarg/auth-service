@@ -44,7 +44,7 @@ prep-docker: ## Prepare postges database
 
 
 pre-commit:
-	npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "frontend:lint,frontend:test,frontend:build,backend:lint,backend:test" \
+	npx concurrently --kill-others-on-fail --prefix "[{name}]" --names "backend:lint,backend:test" \
 	--prefix-colors "bgRed.bold.white,bgGreen.bold.white,bgBlue.bold.white,bgMagenta.bold.white" \
 	"docker exec auth-service-auth-1 make format" \
 	"docker exec auth-service-auth-1 make test"

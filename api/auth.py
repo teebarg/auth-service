@@ -1,6 +1,8 @@
+import json
 from datetime import datetime, timedelta
 from typing import Annotated, Any
 
+import aio_pika
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -17,8 +19,6 @@ from core.utils import (
 from models.auth import SignIn, Social
 from models.token import Token
 from models.user import UserCreate, UserPublic, UserRegister
-import aio_pika
-import json
 
 # Create a router for users
 router = APIRouter()
@@ -85,7 +85,9 @@ def login(
 
 
 @router.post("/signup", response_model=UserPublic)
-async def register_user(db: deps.SessionDep, user_in: UserRegister, background_tasks: BackgroundTasks) -> Any:
+async def register_user(
+    db: deps.SessionDep, user_in: UserRegister, background_tasks: BackgroundTasks
+) -> Any:
     """
     Create new user without the need to be logged in.
     """
@@ -126,10 +128,7 @@ async def register_user(db: deps.SessionDep, user_in: UserRegister, background_t
             subject=email_data.subject,
             html_content=email_data.html_content,
         )
-        await publish_event({
-            "event": "new_user",
-            "content": jsonable_encoder(user)
-        })
+        await publish_event({"event": "new_user", "content": jsonable_encoder(user)})
         return response
     except Exception as e:
         logger.error(e)
@@ -143,14 +142,12 @@ async def publish_event(event: dict):
         connection = await aio_pika.connect_robust(f"amqp://{settings.RABBITMQ_HOST}")
         channel = await connection.channel()
         await channel.default_exchange.publish(
-            aio_pika.Message(body=json.dumps(event).encode()),
-            routing_key="new_user"
+            aio_pika.Message(body=json.dumps(event).encode()), routing_key="new_user"
         )
         await connection.close()
         logger.debug(connection)
     except Exception as e:
         logger.error(e)
-
 
 
 @router.get("/refresh-token", response_model=Token)

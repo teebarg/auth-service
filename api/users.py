@@ -278,7 +278,11 @@ async def process_file(file, task_id: str, db: SessionDep):
 
 
 async def send_status_update(task_id: str):
-    await manager.broadcast(id=task_id, data=upload_statuses.get(task_id).model_dump(), type="sheet-processor")
+    await manager.broadcast(
+        id=task_id,
+        data=upload_statuses.get(task_id).model_dump(),
+        type="sheet-processor",
+    )
 
 
 @router.post("/excel/{task_id}")

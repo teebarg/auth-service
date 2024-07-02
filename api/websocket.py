@@ -3,6 +3,7 @@ from typing import Dict
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+
 class ConnectionManager:
     def __init__(self):
         self.connections: Dict[str, WebSocket] = {}
