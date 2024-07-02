@@ -3,10 +3,9 @@ from typing import Dict
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-
 class ConnectionManager:
     def __init__(self):
-        self.connections: Dict[str, list[WebSocket]] = {}
+        self.connections: Dict[str, WebSocket] = {}
 
     async def connect(self, id: str, websocket: WebSocket) -> None:
         """
@@ -19,11 +18,9 @@ class ConnectionManager:
         - None
         """
         await websocket.accept()
-        conns = self.connections.get(id, [])
-        conns.append(websocket)
-        self.connections.update({id: conns})
+        self.connections[id] = websocket
 
-    def disconnect(self, websocket: WebSocket) -> None:
+    def disconnect(self, id: str) -> None:
         """
         Disconnects a WebSocket connection.
 
@@ -33,10 +30,10 @@ class ConnectionManager:
         Returns:
         None
         """
-        for key in self.connections:
-            self.connections[key].remove(websocket)
+        if id in self.connections:
+            del self.connections[id]
 
-    async def broadcast(self, id: str, data: dict) -> None:
+    async def broadcast(self, id: str, data: dict, type: str = "general") -> None:
         """
         Broadcasts the given data to all active connections.
 
@@ -46,8 +43,9 @@ class ConnectionManager:
         Returns:
             None
         """
-        for connection in self.connections.get(id, []):
-            await connection.send_json(data)
+        if id in self.connections:
+            websocket = self.connections[id]
+            await websocket.send_json({**data, "type": type})
 
 
 manager = ConnectionManager()

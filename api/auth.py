@@ -17,6 +17,8 @@ from core.utils import (
 from models.auth import SignIn, Social
 from models.token import Token
 from models.user import UserCreate, UserPublic, UserRegister
+import aio_pika
+import json
 
 # Create a router for users
 router = APIRouter()
@@ -126,7 +128,7 @@ async def register_user(db: deps.SessionDep, user_in: UserRegister, background_t
         )
         await publish_event({
             "event": "new_user",
-            "content": {"message": "This is a test message"}
+            "content": jsonable_encoder(user)
         })
         return response
     except Exception as e:
@@ -135,17 +137,20 @@ async def register_user(db: deps.SessionDep, user_in: UserRegister, background_t
             status_code=500, detail=f"An error occurred while signing up. Error: ${e}"
         ) from e
 
-import aio_pika
-import json
 
 async def publish_event(event: dict):
-    connection = await aio_pika.connect_robust("amqp://rabbitmq")
-    channel = await connection.channel()
-    await channel.default_exchange.publish(
-        aio_pika.Message(body=json.dumps(event).encode()),
-        routing_key="new_user"
-    )
-    await connection.close()
+    try:
+        connection = await aio_pika.connect_robust(f"amqp://{settings.RABBITMQ_HOST}")
+        channel = await connection.channel()
+        await channel.default_exchange.publish(
+            aio_pika.Message(body=json.dumps(event).encode()),
+            routing_key="new_user"
+        )
+        await connection.close()
+        logger.debug(connection)
+    except Exception as e:
+        logger.error(e)
+
 
 
 @router.get("/refresh-token", response_model=Token)

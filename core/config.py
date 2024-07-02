@@ -77,6 +77,7 @@ class Settings(BaseSettings):
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     # e.g: '["http://localhost", "http://localhost:4200", "http://localhost:3000"]'
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    RABBITMQ_HOST: str = "rabbitmq"
 
     model_config = SettingsConfigDict(env_file=".env")
 
