@@ -72,7 +72,7 @@ async def read_user_me(current_user: deps.CurrentUser) -> UserPublic:
     dependencies=[Depends(get_current_active_superuser)],
     response_model=UsersPublic,
 )
-def read_users(
+async def read_users(
     db: SessionDep,
     name: str = "",
     page: int = Query(default=1, gt=0),

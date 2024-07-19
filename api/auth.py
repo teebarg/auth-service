@@ -40,14 +40,14 @@ def login_access_token(
         raise HTTPException(status_code=400, detail="Inactive user")
     return Token(
         access_token=security.create_access_token(
-            user.id,
+            user.email,
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         )
     )
 
 
 @router.post("/login")
-def login(
+async def login(
     response: Response,
     db: deps.SessionDep,
     credentials: SignIn,
@@ -64,7 +64,7 @@ def login(
         elif not user.is_active:
             raise HTTPException(status_code=400, detail="Inactive user")
         access_token = security.create_access_token(
-            user.id,
+            user.email,
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         )
 
@@ -75,6 +75,8 @@ def login(
             secure=True,
             httponly=True,
         )
+
+        await publish_event({"event": "login", "content": jsonable_encoder(user)})
 
         return user
     except Exception as e:
@@ -106,7 +108,7 @@ async def register_user(
         user_create = UserCreate.model_validate(user_in)
         user = crud.user.create(db=db, user_create=user_create)
         access_token = security.create_access_token(
-            user.id,
+            user.email,
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         )
 
@@ -142,7 +144,7 @@ async def publish_event(event: dict):
         connection = await aio_pika.connect_robust(f"amqp://{settings.RABBITMQ_HOST}")
         channel = await connection.channel()
         await channel.default_exchange.publish(
-            aio_pika.Message(body=json.dumps(event).encode()), routing_key="new_user"
+            aio_pika.Message(body=json.dumps(event).encode()), routing_key="auth_queue"
         )
         await connection.close()
         logger.debug(connection)
@@ -162,7 +164,7 @@ async def test_token(
         if not current_user.is_active:
             raise HTTPException(status_code=400, detail="Inactive user")
         access_token = security.create_access_token(
-            current_user.id,
+            current_user.email,
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         )
         response.set_cookie(
@@ -195,7 +197,7 @@ async def social(response: Response, credentials: Social, db: deps.SessionDep) -
             user_create = UserCreate.model_validate(credentials)
             user = crud.user.create(db=db, user_create=user_create)
         access_token = security.create_access_token(
-            user.id,
+            user.email,
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         )
         response.set_cookie(

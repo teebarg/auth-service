@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 
 from models.user import User, UserUpdate
 
-from .crud_user import user  # noqa: F401
+from .user import user  # noqa: F401
 
 
 # For a new basic set of CRUD operations you could just do
